@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KB-Medic - Data Source Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-cyan-700 mb-8">
+            <i class="fas fa-database"></i>
+            اختبار مصدر البيانات
+        </h1>
+
+        <!-- Status Card -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">حالة الاتصال</h2>
+            <div id="connection-status" class="flex items-center gap-2">
+                <i class="fas fa-circle text-gray-400"></i>
+                <span>جاري الفحص...</span>
+            </div>
+        </div>
+
+        <!-- Products from Database -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">المنتجات من قاعدة البيانات</h2>
+                <button onclick="fetchFromDB()" class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700">
+                    <i class="fas fa-sync-alt"></i>
+                    إعادة تحميل
+                </button>
+            </div>
+            <div id="products-list" class="space-y-2">
+                <!-- Products will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Users from Database -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg mt-6">
+            <h2 class="text-xl font-bold mb-4">المستخدمين من قاعدة البيانات</h2>
+            <div id="users-list" class="space-y-2">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        async function fetchFromDB() {
+            const statusEl = document.getElementById('connection-status');
+            const productsEl = document.getElementById('products-list');
+            const usersEl = document.getElementById('users-list');
+
+            try {
+                // Test connection
+                statusEl.innerHTML = '<i class="fas fa-spinner fa-spin text-cyan-600"></i><span>جاري الاتصال بقاعدة البيانات...</span>';
+
+                // Fetch products
+                const productsRes = await fetch(`${API_BASE}/products`);
+                const products = await productsRes.json();
+
+                // Fetch users (need admin token)
+                const loginRes = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@pharmacy.com', password: 'admin123' })
+                });
+                const loginData = await loginRes.json();
+
+                const usersRes = await fetch(`${API_BASE}/users`, {
+                    headers: { 'Authorization': `Bearer ${loginData.token}` }
+                });
+                const users = await usersRes.json();
+
+                // Update status
+                statusEl.innerHTML = `
+                    <i class="fas fa-check-circle text-green-500"></i>
+                    <span class="text-green-600 font-bold">متصل بقاعدة البيانات بنجاح!</span>
+                    <span class="text-gray-500">(${products.length} منتجات، ${users.length} مستخدمين)</span>
+                `;
+
+                // Display products
+                productsEl.innerHTML = products.map((p, i) => `
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span class="font-medium">${i + 1}. ${p.name}</span>
+                        <span class="text-cyan-600 font-bold">${p.price} دج</span>
+                    </div>
+                `).join('') || '<p class="text-gray-500">لا توجد منتجات</p>';
+
+                // Display users
+                usersEl.innerHTML = users.map((u, i) => `
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <span class="font-medium">${i + 1}. ${u.name} (${u.email})</span>
+                        <span class="px-2 py-1 rounded-full text-xs ${u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">${u.role}</span>
+                    </div>
+                `).join('') || '<p class="text-gray-500">لا توجد مستخدمين</p>';
+
+            } catch (error) {
+                statusEl.innerHTML = `
+                    <i class="fas fa-times-circle text-red-500"></i>
+                    <span class="text-red-600 font-bold">خطأ في الاتصال</span>
+                    <span class="text-gray-500">${error.message}</span>
+                `;
+                console.error('Error:', error);
+            }
+        }
+
+        // Fetch on load
+        fetchFromDB();
+    </script>
+</body>
+</html>
