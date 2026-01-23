@@ -10,7 +10,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/vercel-server.js"
+      "destination": "/api/index.js"
     },
     {
       "source": "/admin",
