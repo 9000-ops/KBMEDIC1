@@ -62,7 +62,7 @@
     }
   ],
   "env": {
-    "DATABASE_URL": "@database_url",
-    "JWT_SECRET": "@jwt_secret"
+    "DATABASE_URL": "database_url",
+    "JWT_SECRET": "jwt_secret"
   }
 }
